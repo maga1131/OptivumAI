@@ -1,81 +1,177 @@
-from pathlib import Path
+from __future__ import annotations
+
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (QFileDialog, QGridLayout, QGroupBox, QHeaderView, QLabel,
-                               QMainWindow, QMessageBox, QPushButton, QTableWidget,
-                               QTableWidgetItem, QVBoxLayout, QWidget)
-from database.database import SessionLocal
-from database.repository import Repository
-from importer.html_importer import HtmlImporter
+from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QStackedWidget, QWidget
+
+from ui.navigation import NavigationPanel
+from ui.pages import (
+    AnalysisPage,
+    ClassesPage,
+    LessonsPage,
+    OptimizerPage,
+    ProjectPage,
+    ReportsPage,
+    RoomsPage,
+    TeachersPage,
+)
+
+
+APP_STYLE = """
+QMainWindow, QWidget {
+    background: #f4f6f8;
+    color: #1f2933;
+    font-family: "Segoe UI";
+    font-size: 10pt;
+}
+#navigationPanel {
+    background: #172033;
+}
+#appTitle {
+    color: white;
+    font-size: 20pt;
+    font-weight: 700;
+}
+#appSubtitle, #versionLabel {
+    color: #9fb0c6;
+}
+#navigationButton {
+    background: transparent;
+    color: #dce5f0;
+    border: none;
+    border-radius: 7px;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+}
+#navigationButton:hover {
+    background: #23314a;
+}
+#navigationButton:checked {
+    background: #2e6fdb;
+    color: white;
+}
+#pageTitle {
+    font-size: 22pt;
+    font-weight: 700;
+    color: #172033;
+}
+#pageDescription, #mutedText {
+    color: #66788a;
+}
+#contentCard, #statCard {
+    background: white;
+    border: 1px solid #dce3ea;
+    border-radius: 10px;
+}
+#sectionTitle {
+    font-size: 12pt;
+    font-weight: 700;
+}
+#statValue {
+    font-size: 24pt;
+    font-weight: 700;
+    color: #2e6fdb;
+}
+#statCaption {
+    color: #66788a;
+}
+QPushButton {
+    background: white;
+    border: 1px solid #cbd5df;
+    border-radius: 6px;
+    padding: 8px 14px;
+}
+QPushButton:hover {
+    background: #edf2f7;
+}
+#primaryButton {
+    background: #2e6fdb;
+    color: white;
+    border: 1px solid #2e6fdb;
+    font-weight: 600;
+}
+#primaryButton:hover {
+    background: #255fbe;
+}
+QLineEdit {
+    background: white;
+    border: 1px solid #cbd5df;
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+QTableWidget {
+    background: white;
+    alternate-background-color: #f7f9fb;
+    border: 1px solid #dce3ea;
+    border-radius: 6px;
+    gridline-color: #e7ecf1;
+}
+QHeaderView::section {
+    background: #edf2f7;
+    border: none;
+    border-bottom: 1px solid #dce3ea;
+    padding: 8px;
+    font-weight: 600;
+}
+QStatusBar {
+    background: white;
+    border-top: 1px solid #dce3ea;
+}
+"""
+
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("OptivumAI v0.4.0")
-        self.resize(1150, 720)
-        self.project_label = QLabel("Projekt: brak")
-        self.project_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.teacher_label = QLabel("Nauczyciele: 0")
-        self.class_label = QLabel("Klasy: 0")
-        self.room_label = QLabel("Sale: 0")
-        self.lesson_label = QLabel("Lekcje: 0")
-        self.import_button = QPushButton("Importuj eksport HTML Optivum")
-        self.import_button.clicked.connect(self.import_html)
-        self.refresh_button = QPushButton("Odśwież dane z bazy")
-        self.refresh_button.clicked.connect(self.refresh_view)
-        self.table = QTableWidget(0, 8)
-        self.table.setHorizontalHeaderLabels(["Dzień", "Lekcja", "Godzina", "Nauczyciel", "Klasa", "Grupa", "Przedmiot", "Sala"])
-        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.table.setAlternatingRowColors(True)
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.table.horizontalHeader().setStretchLastSection(True)
-        root = QWidget(); layout = QVBoxLayout(root)
-        project = QGroupBox("Projekt"); pl = QVBoxLayout(project)
-        pl.addWidget(self.project_label); pl.addWidget(self.import_button); pl.addWidget(self.refresh_button)
-        stats = QGroupBox("Statystyki bazy"); sl = QGridLayout(stats)
-        sl.addWidget(self.teacher_label,0,0); sl.addWidget(self.class_label,0,1)
-        sl.addWidget(self.room_label,1,0); sl.addWidget(self.lesson_label,1,1)
-        layout.addWidget(project); layout.addWidget(stats); layout.addWidget(QLabel("Zaimportowane lekcje")); layout.addWidget(self.table,1)
-        self.setCentralWidget(root); self.statusBar().showMessage("Gotowy")
-        self.refresh_view()
+        self.resize(1280, 780)
+        self.setMinimumSize(980, 640)
+        self.setStyleSheet(APP_STYLE)
 
-    def import_html(self):
-        folder = QFileDialog.getExistingDirectory(self, "Wybierz katalog eksportu WWW z Plan Lekcji Optivum")
-        if not folder: return
-        importer = HtmlImporter(folder)
-        missing = importer.validate()
-        if missing:
-            message = "Brakuje:\n\n" + "\n".join(f"• {x}" for x in missing)
-            QMessageBox.warning(self, "Niepoprawny eksport", message)
+        central = QWidget()
+        layout = QHBoxLayout(central)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        self.navigation = NavigationPanel()
+        self.stack = QStackedWidget()
+        layout.addWidget(self.navigation)
+        layout.addWidget(self.stack, 1)
+        self.setCentralWidget(central)
+
+        self.pages = {
+            "project": ProjectPage(),
+            "teachers": TeachersPage(),
+            "classes": ClassesPage(),
+            "rooms": RoomsPage(),
+            "lessons": LessonsPage(),
+            "analysis": AnalysisPage(),
+            "optimizer": OptimizerPage(),
+            "reports": ReportsPage(),
+        }
+        for page in self.pages.values():
+            self.stack.addWidget(page)
+
+        self.navigation.page_selected.connect(self.show_page)
+        self.pages["project"].data_changed.connect(self.refresh_data_pages)
+        self.pages["project"].status_message.connect(self.statusBar().showMessage)
+
+        self.show_page("project")
+        self.statusBar().showMessage("Gotowy")
+
+    def show_page(self, page_key: str) -> None:
+        page = self.pages.get(page_key)
+        if page is None:
             return
-        self.import_button.setEnabled(False); self.statusBar().showMessage("Trwa importowanie danych…")
-        try:
-            result = importer.import_project()
-            with SessionLocal() as session:
-                repo = Repository(session); repo.clear_all(); repo.save_import(result.teachers, result.classes, result.rooms, result.lessons)
-            self.project_label.setText(f"Projekt: {Path(folder)}"); self.refresh_view()
-            summary = (
-                f"Nauczyciele: {len(result.teachers)}\n"
-                f"Klasy: {len(result.classes)}\n"
-                f"Sale: {len(result.rooms)}\n"
-                f"Lekcje: {len(result.lessons)}"
-            )
-            QMessageBox.information(self, "Import zakończony", summary)
-        except Exception as e:
-            QMessageBox.critical(self, "Błąd importu", str(e))
-        finally:
-            self.import_button.setEnabled(True); self.statusBar().showMessage("Gotowy")
+        refresh = getattr(page, "refresh_data", None)
+        if callable(refresh) and page_key != "project":
+            refresh()
+        self.stack.setCurrentWidget(page)
+        self.navigation.select(page_key)
 
-    def refresh_view(self):
-        with SessionLocal() as session:
-            repo = Repository(session); counts = repo.counts(); lessons = repo.list_lessons()
-        self.teacher_label.setText(f"Nauczyciele: {counts['teachers']}")
-        self.class_label.setText(f"Klasy: {counts['classes']}")
-        self.room_label.setText(f"Sale: {counts['rooms']}")
-        self.lesson_label.setText(f"Lekcje: {counts['lessons']}")
-        self.table.setRowCount(len(lessons))
-        for r, lesson in enumerate(lessons):
-            values=[lesson.day_name,str(lesson.lesson_number),lesson.time_range or "",lesson.teacher.name,
-                    lesson.school_class.name if lesson.school_class else "",lesson.group_name or "",lesson.subject,
-                    lesson.room.name if lesson.room else ""]
-            for c, value in enumerate(values): self.table.setItem(r,c,QTableWidgetItem(value))
+    def refresh_data_pages(self) -> None:
+        for key in ("teachers", "classes", "rooms", "lessons"):
+            refresh = getattr(self.pages[key], "refresh_data", None)
+            if callable(refresh):
+                refresh()
+        self.statusBar().showMessage("Zaimportowano i odświeżono dane")

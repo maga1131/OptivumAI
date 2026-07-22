@@ -36,3 +36,11 @@
 - [ ] Ocena jakości planu
 - [ ] Propozycje zmian
 - [ ] Automatyczna optymalizacja
+
+
+## Sprint 2 – interfejs wielostronicowy
+- [x] Panel nawigacyjny
+- [x] Strona Projekt
+- [x] Listy nauczycieli, klas i sal
+- [x] Przegląd lekcji
+- [x] Szablony Analizy, Optymalizacji i Raportów

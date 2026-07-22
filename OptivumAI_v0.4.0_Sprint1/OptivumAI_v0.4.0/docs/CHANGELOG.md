@@ -14,3 +14,8 @@
 - parser eksportu HTML,
 - zapis importu do bazy,
 - tabela lekcji i statystyki w interfejsie.
+
+## 0.4.0 Sprint 2
+- Dodano wielostronicowy interfejs z lewą nawigacją.
+- Dodano strony Projekt, Nauczyciele, Klasy, Sale i Lekcje.
+- Dodano wyszukiwanie oraz automatyczne odświeżanie widoków po imporcie.

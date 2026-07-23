@@ -69,7 +69,7 @@ class NavigationPanel(QWidget):
 
         layout.addStretch(1)
 
-        version = QLabel("wersja 0.5.1")
+        version = QLabel("wersja 0.5.3")
         version.setObjectName("versionLabel")
         layout.addWidget(version)
 

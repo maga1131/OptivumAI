@@ -1,13 +1,15 @@
 import sys
-
 from PySide6.QtWidgets import QApplication
-
+from database.database import init_database
 from ui.main_window import MainWindow
 
-app = QApplication(sys.argv)
+def main() -> int:
+    init_database()
+    app = QApplication(sys.argv)
+    app.setApplicationName("OptivumAI")
+    window = MainWindow()
+    window.show()
+    return app.exec()
 
-window = MainWindow()
-
-window.show()
-
-sys.exit(app.exec())
+if __name__ == "__main__":
+    raise SystemExit(main())

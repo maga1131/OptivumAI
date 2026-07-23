@@ -68,7 +68,7 @@ class HtmlImporter:
                 data = self._cell_data(cells[col].get_text(" ", strip=True))
                 if not data or not data["subject"]: continue
                 result.append(ParsedLesson(teacher, day_name, day_index, number, time_range,
-                                           data["class_name"], data["group_name"], data["subject"], data["room"]))
+                                           data["class_name"], data["group_name"], data["subject"], data["room"], data["participants"]))
         return result
 
     def _day_columns(self, rows):
@@ -93,19 +93,97 @@ class HtmlImporter:
     @staticmethod
     def _cell_data(text):
         text = " ".join(text.replace("\xa0", " ").split())
-        if not text or text in {"-", "–", "—"}: return None
-        tokens = re.split(r"\s+", text)
-        class_name = next((t for t in tokens if re.fullmatch(r"\d{1,2}[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż][A-Za-z0-9-]*", t)), None)
-        group_name = next((t for t in tokens if re.fullmatch(r"\d+/\d+", t)), None)
+        if not text or text in {"-", "–", "—"}:
+            return None
+
+        # Sala znajduje się na końcu wpisu. Oprócz sal rozpoczynających
+        # się cyfrą, W, SALA lub CKZ obsługujemy specjalne oznaczenie "@".
         room = None
-        rm = re.search(r"(?:sala|s\.?)\s*[:.]?\s*([A-Za-z0-9-]+)", text, re.I)
-        if rm: room = rm.group(1)
-        subject = text
-        for value in (class_name, group_name):
-            if value: subject = subject.replace(value, " ", 1)
-        if rm: subject = subject.replace(rm.group(0), " ", 1)
+        rm = re.search(
+            r"(?P<room>"
+            r"@"
+            r"|(?:SALA(?:[_ -]+\S+)*)"
+            r"|(?:CKZ(?:[_ -]+\S+)*)"
+            r"|(?:W\S*)"
+            r"|(?:\d+\S*)"
+            r")$",
+            text,
+            re.IGNORECASE,
+        )
+        if rm:
+            candidate = rm.group("room").strip(" ,;|")
+            looks_like_class = bool(re.fullmatch(
+                r"\d{1,2}[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż][A-Za-z0-9_ĄĆĘŁŃÓŚŹŻąćęłńóśźż]*",
+                candidate,
+            ))
+            # Gdy przed końcowym tokenem występuje oznaczenie grupy, token
+            # podobny do 3TA jest klasą, a nie salą.
+            if looks_like_class and re.search(r"-[^\s,]+\s+" + re.escape(candidate) + r"$", text):
+                rm = None
+            elif candidate == "@" or not candidate.casefold().startswith("w") or candidate.startswith("W"):
+                room = candidate
+            else:
+                rm = None
+
+        content = text[:rm.start()] if rm else text
+        content = content.strip(" ,;|")
+
+        # Zajęcia mogą obejmować kilka grup z różnych klas, np.:
+        # "3TA -3/3, 3TB -2/2 j.hiszpański". Wyłapujemy wszystkie
+        # pary klasa-grupa z początku wpisu. Nazwą grupy jest cały ciąg
+        # po myślniku do najbliższej spacji lub przecinka.
+        participant_pattern = re.compile(
+            r"(?P<class>\d{1,2}[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]"
+            r"[A-Za-z0-9_ĄĆĘŁŃÓŚŹŻąćęłńóśźż]*)"
+            r"(?:\s*-(?P<group>[^\s,]+))?"
+        )
+        matches = list(participant_pattern.finditer(content))
+        participants: list[tuple[str, str | None]] = []
+        prefix_end = 0
+        for match in matches:
+            # Uznajemy za uczestników tylko kolejne oznaczenia na początku
+            # wpisu, rozdzielone spacją lub przecinkiem.
+            between = content[prefix_end:match.start()]
+            if participants and between.strip(" ,"):
+                break
+            if not participants and match.start() != 0:
+                break
+            participants.append((match.group("class"), match.group("group")))
+            prefix_end = match.end()
+
+        if participants:
+            subject = content[prefix_end:].lstrip(" ,")
+        else:
+            # Starsze i nietypowe wpisy mogą mieć przedmiot przed oznaczeniem
+            # grupy/klasy. Wtedy zachowujemy uniwersalną regułę: grupa to
+            # wszystko po "-" do spacji, niezależnie od położenia.
+            class_match = re.search(
+                r"(?<![A-Za-z0-9_])\d{1,2}[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]"
+                r"[A-Za-z0-9_ĄĆĘŁŃÓŚŹŻąćęłńóśźż]*",
+                content,
+            )
+            group_match = re.search(r"-([^\s,]+)", content)
+            class_name = class_match.group(0) if class_match else None
+            group_name = group_match.group(1) if group_match else None
+            if class_name:
+                participants = [(class_name, group_name)]
+            subject = content
+            if class_match:
+                subject = subject[:class_match.start()] + " " + subject[class_match.end():]
+            if group_match:
+                subject = re.sub(r"-[^\s,]+", " ", subject, count=1)
+
+        # Zgodność wsteczna: główna klasa i grupa to pierwszy uczestnik.
+        class_name = participants[0][0] if participants else None
+        group_name = participants[0][1] if participants else None
         subject = " ".join(subject.split()).strip(" -|,")
-        return {"class_name": class_name, "group_name": group_name, "subject": subject, "room": room}
+        return {
+            "class_name": class_name,
+            "group_name": group_name,
+            "participants": tuple(participants),
+            "subject": subject,
+            "room": room,
+        }
 
     @staticmethod
     def _soup(path):

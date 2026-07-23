@@ -1,4 +1,4 @@
-# OptivumAI v0.4.0
+# OptivumAI v0.4.5
 
 Wersja zapisująca dane z eksportu WWW programu Plan Lekcji Optivum do bazy SQLite.
 

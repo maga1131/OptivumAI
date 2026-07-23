@@ -85,13 +85,15 @@ class ProjectPage(BasePage):
         self.cards = {
             "teachers": StatCard("Nauczyciele"),
             "classes": StatCard("Klasy"),
+            "groups": StatCard("Grupy klas"),
             "rooms": StatCard("Sale"),
             "lessons": StatCard("Lekcje"),
         }
         stats_grid.addWidget(self.cards["teachers"], 0, 0)
         stats_grid.addWidget(self.cards["classes"], 0, 1)
-        stats_grid.addWidget(self.cards["rooms"], 1, 0)
-        stats_grid.addWidget(self.cards["lessons"], 1, 1)
+        stats_grid.addWidget(self.cards["groups"], 1, 0)
+        stats_grid.addWidget(self.cards["rooms"], 1, 1)
+        stats_grid.addWidget(self.cards["lessons"], 2, 0, 1, 2)
         self.root_layout.addLayout(stats_grid)
         self.add_stretch()
 
@@ -139,6 +141,7 @@ class ProjectPage(BasePage):
                         f"Nauczyciele: {len(result.teachers)}",
                         f"Klasy: {len(result.classes)}",
                         f"Sale: {len(result.rooms)}",
+                        f"Grupy: {len({(x.class_name, x.group_name) for x in result.lessons if x.class_name and x.group_name})}",
                         f"Lekcje: {len(result.lessons)}",
                     )
                 ),

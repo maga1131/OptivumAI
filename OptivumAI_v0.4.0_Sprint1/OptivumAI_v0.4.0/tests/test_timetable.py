@@ -33,6 +33,7 @@ def test_builds_indexes_from_lessons():
     assert timetable.counts() == {
         "teachers": 1,
         "classes": 1,
+        "groups": 0,
         "rooms": 1,
         "lessons": 2,
     }
@@ -102,3 +103,40 @@ def test_unknown_owner_raises_clear_error():
 def test_invalid_lesson_is_rejected():
     with pytest.raises(ValueError, match="Numer lekcji"):
         lesson(0)
+
+
+def test_discovers_multiple_divisions_for_one_class():
+    timetable = Timetable([
+        Lesson(None, "A", 0, 1, "Język", class_name="3TC", group_name="1/3"),
+        Lesson(None, "B", 0, 1, "Zawodowe", class_name="3TC", group_name="2/4"),
+    ])
+
+    assert {(group.name, group.division_count) for group in timetable.groups_for_class("3TC")} == {
+        ("1/3", 3),
+        ("2/4", 4),
+    }
+    assert timetable.counts()["groups"] == 2
+
+
+def test_groups_in_same_division_can_run_simultaneously():
+    first = Lesson(None, "A", 0, 1, "Przedmiot 1", class_name="3TC", group_name="1/4")
+    second = Lesson(None, "B", 0, 1, "Przedmiot 2", class_name="3TC", group_name="2/4")
+    timetable = Timetable([first, second])
+
+    assert timetable.class_lessons_conflict(first, second) is False
+
+
+def test_groups_from_different_divisions_are_conservatively_conflicting():
+    first = Lesson(None, "A", 0, 1, "Język", class_name="3TC", group_name="1/3")
+    second = Lesson(None, "B", 0, 1, "Zawodowe", class_name="3TC", group_name="2/4")
+    timetable = Timetable([first, second])
+
+    assert timetable.class_lessons_conflict(first, second) is True
+
+
+def test_whole_class_conflicts_with_every_group():
+    whole_class = Lesson(None, "A", 0, 1, "Historia", class_name="3TC")
+    group = Lesson(None, "B", 0, 1, "Język", class_name="3TC", group_name="1/3")
+    timetable = Timetable([whole_class, group])
+
+    assert timetable.class_lessons_conflict(whole_class, group) is True

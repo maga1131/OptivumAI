@@ -1,3 +1,32 @@
+## 0.4.5 - sale @ i lekcje łączone
+
+- dodano rozpoznawanie sali oznaczonej znakiem `@`,
+- dodano odczyt wielu par klasa-grupa w jednej lekcji,
+- lekcja łączona jest zapisywana jako jeden wpis powiązany z grupami różnych klas,
+- moduł Lekcje pokazuje wszystkie klasy i grupy uczestniczące w zajęciach,
+- dodano testy parsera dla obu przypadków.
+
+## 0.4.4 - poprawne odczytywanie sal
+
+- sala jest odczytywana z końca wpisu lekcji,
+- obsługiwane są sale rozpoczynające się cyfrą, W, SALA lub CKZ,
+- pełna nazwa sali jest usuwana z nazwy przedmiotu,
+- dodano testy dla sal: 16A, W10, SALA_GIM1, SALA GIM2 i CKZ_AK.
+
+## 0.4.3 - uniwersalne nazwy grup
+
+- nazwa grupy jest odczytywana jako cały ciąg po znaku `-` do najbliższej spacji,
+- obsługa nazw liczbowych, rzymskich i tekstowych, np. `1/2`, `II/1`, `G1`,
+- znak `-` jest pomijany i nie trafia do nazwy grupy ani przedmiotu.
+
+## 0.4.2 - poprawka importu grup
+
+- Rozpoznawanie oznaczeń grup `-1/2`, `-2/3` itd. w dowolnym miejscu wpisu.
+- Pomijanie znaku `-` w zapisanej nazwie grupy.
+- Obsługa oznaczenia grupy bezpośrednio po nazwie klasy, np. `4T_C-3/3`.
+- Poprawione rozpoznawanie nazw klas zawierających znak `_`.
+- Dodane testy parsera grup.
+
 # Changelog
 
 ## 0.4.0 - Sprint 1
@@ -19,3 +48,12 @@
 - Dodano wielostronicowy interfejs z lewą nawigacją.
 - Dodano strony Projekt, Nauczyciele, Klasy, Sale i Lekcje.
 - Dodano wyszukiwanie oraz automatyczne odświeżanie widoków po imporcie.
+
+## Sprint 3 – obsługa grup klasowych
+- dodano encję `ClassGroup`,
+- rozpoznawanie podziałów 1/2, 1/3, 1/4 itd.,
+- zapis grup w tabeli `class_groups`,
+- powiązanie lekcji z grupami,
+- obsługa wielu różnych podziałów w jednej klasie,
+- zachowawcze wykrywanie konfliktów między różnymi podziałami,
+- licznik grup na stronie Projekt.

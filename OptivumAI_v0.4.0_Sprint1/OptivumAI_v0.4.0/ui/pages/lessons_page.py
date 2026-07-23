@@ -61,8 +61,11 @@ class LessonsPage(BasePage):
                     str(lesson.lesson_number),
                     lesson.time_range or "",
                     lesson.teacher.name,
-                    lesson.school_class.name if lesson.school_class else "",
-                    lesson.group_name or "",
+                    ", ".join(dict.fromkeys(
+                        [group.school_class.name for group in lesson.groups]
+                        or ([lesson.school_class.name] if lesson.school_class else [])
+                    )),
+                    ", ".join(group.name for group in lesson.groups) or (lesson.group_name or ""),
                     lesson.subject,
                     lesson.room.name if lesson.room else "",
                 )

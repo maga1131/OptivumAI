@@ -138,7 +138,7 @@ QStatusBar {
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("OptivumAI v0.5.3")
+        self.setWindowTitle("OptivumAI v0.6.1")
         self.resize(1280, 780)
         self.setMinimumSize(980, 640)
         self.setStyleSheet(APP_STYLE)

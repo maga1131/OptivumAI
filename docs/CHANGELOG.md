@@ -1,3 +1,11 @@
+# Changelog
+
+## v0.8.0
+- Dodano analizę konfliktów planu.
+- Dodano ocenę planu na żywo.
+- Przenoszenie i zamiana nie zapisują operacji tworzącej nowy konflikt.
+- Dodano liczniki okienek nauczycieli, okienek klas i przepełnionych dni.
+
 ## 0.4.5 - sale @ i lekcje łączone
 
 - dodano rozpoznawanie sali oznaczonej znakiem `@`,
@@ -64,3 +72,10 @@
 - grupy wyświetlane poziomo z czytelnymi separatorami,
 - dodane oznaczenia nauczyciela, sali i godziny,
 - zwiększona wysokość komórek planu.
+
+## v0.8.0
+- panel „Dlaczego?” analizujący wybraną lekcję,
+- wyszukiwanie do 5 najlepszych bezkonfliktowych przeniesień i zamian,
+- porównanie oceny planu przed i po proponowanej zmianie,
+- opis korzyści: redukcja konfliktów, okienek i przepełnionych dni,
+- zastosowanie podpowiedzi jednym kliknięciem z potwierdzeniem.

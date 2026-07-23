@@ -85,6 +85,75 @@ class Repository:
             "lessons": self.session.scalar(select(func.count()).select_from(Lesson)) or 0,
         }
 
+    def move_lessons(
+        self,
+        lesson_ids: tuple[int, ...] | list[int],
+        day_index: int,
+        day_name: str,
+        lesson_number: int,
+    ) -> None:
+        """Zmienia termin jednej lekcji lub lekcji połączonych w tej samej komórce."""
+        ids = tuple(dict.fromkeys(int(lesson_id) for lesson_id in lesson_ids))
+        if not ids:
+            return
+        if day_index not in range(1, 6):
+            raise ValueError("Dzień planu musi mieścić się w zakresie od 1 do 5.")
+        if lesson_number < 1:
+            raise ValueError("Numer lekcji musi być większy od zera.")
+
+        lessons = list(self.session.scalars(select(Lesson).where(Lesson.id.in_(ids))))
+        if len(lessons) != len(ids):
+            raise ValueError("Nie znaleziono wszystkich przenoszonych lekcji.")
+
+        for lesson in lessons:
+            lesson.day_index = day_index
+            lesson.day_name = day_name
+            lesson.lesson_number = lesson_number
+        self.session.commit()
+
+    def swap_lessons(
+        self,
+        source_lesson_ids: tuple[int, ...] | list[int],
+        target_lesson_ids: tuple[int, ...] | list[int],
+        source_day_index: int,
+        source_day_name: str,
+        source_lesson_number: int,
+        target_day_index: int,
+        target_day_name: str,
+        target_lesson_number: int,
+    ) -> None:
+        """Atomowo zamienia miejscami lekcje z dwóch komórek planu."""
+        source_ids = tuple(dict.fromkeys(int(value) for value in source_lesson_ids))
+        target_ids = tuple(dict.fromkeys(int(value) for value in target_lesson_ids))
+        if not source_ids or not target_ids:
+            raise ValueError("Do zamiany potrzebne są lekcje w obu komórkach.")
+        if set(source_ids) & set(target_ids):
+            raise ValueError("Nie można zamienić lekcji z tą samą komórką.")
+        if source_day_index not in range(1, 6) or target_day_index not in range(1, 6):
+            raise ValueError("Dzień planu musi mieścić się w zakresie od 1 do 5.")
+        if source_lesson_number < 1 or target_lesson_number < 1:
+            raise ValueError("Numer lekcji musi być większy od zera.")
+
+        all_ids = source_ids + target_ids
+        lessons = list(self.session.scalars(select(Lesson).where(Lesson.id.in_(all_ids))))
+        by_id = {lesson.id: lesson for lesson in lessons}
+        if len(by_id) != len(set(all_ids)):
+            raise ValueError("Nie znaleziono wszystkich lekcji potrzebnych do zamiany.")
+
+        for lesson_id in source_ids:
+            lesson = by_id[lesson_id]
+            lesson.day_index = target_day_index
+            lesson.day_name = target_day_name
+            lesson.lesson_number = target_lesson_number
+
+        for lesson_id in target_ids:
+            lesson = by_id[lesson_id]
+            lesson.day_index = source_day_index
+            lesson.day_name = source_day_name
+            lesson.lesson_number = source_lesson_number
+
+        self.session.commit()
+
     def list_groups(self):
         stmt = (
             select(ClassGroup)

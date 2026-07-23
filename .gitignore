@@ -1,12 +1,9 @@
-.venv/
-venv/
-__pycache__/
-*.py[cod]
 .idea/
 .pytest_cache/
-.env
+__pycache__/
+*.py[cod]
 *.db
 *.sqlite
 *.sqlite3
-exports/
-data/
+.venv/
+venv/
